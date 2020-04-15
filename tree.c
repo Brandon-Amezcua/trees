@@ -13,6 +13,9 @@
 
 #include "tree.h"
 #include "utils.h"
+#include "fileread.h"
+
+#define BUFSIZE 200
 
 
 //-------------------------------------------------
@@ -22,7 +25,7 @@ tnode* tnode_create(const char* word) {
   p->count = 1;
   p->left = NULL;
   p->right = NULL;
-  
+
   return p;
 }
 
@@ -35,13 +38,13 @@ tree* tree_create(void) {
   tree* p = (tree*)malloc(sizeof(tree));
   p->root = NULL;
   p->size = 0;
-  
+
   return p;
 }
 
 static void tree_deletenodes(tree* t, tnode* p) {
   if (p == NULL) { return; }
-  
+
   tree_deletenodes(t, p->left);
   tree_deletenodes(t, p->right);
   tnode_delete(p);
@@ -61,7 +64,7 @@ size_t tree_size(tree* t) { return t->size; }
 
 static tnode* tree_addnode(tree* t, tnode** p, const char* word) {
   int compare;
-  
+
   if (*p == NULL) {
     *p = tnode_create(word);
   } else if ((compare = strcmp(word, (*p)->word)) == 0) {
@@ -89,7 +92,7 @@ static void tree_printme(tree* t, tnode* p) {
 
 static void tree_printnodes(tree* t, tnode* p) {
   if (p == NULL) { return; }
-  
+
   tree_printnodes(t, p->left);
   tree_printme(t, p);
   tree_printnodes(t, p->right);
@@ -97,7 +100,7 @@ static void tree_printnodes(tree* t, tnode* p) {
 
 static void tree_printnodes_preorder(tree* t, tnode* p) {
   if (p == NULL) { return; }
-  
+
   tree_printme(t, p);
   tree_printnodes(t, p->left);
   tree_printnodes(t, p->right);
@@ -140,7 +143,7 @@ void tree_test() {
   tree_print(t);
   printf("is my tree empty? %s\n", yesorno(tree_empty(t)));
   printf("size of tree: %zu\n\n", tree_size(t));
-  
+
   tree_clear(t);
   printf("is my tree empty now? %s\n", yesorno(tree_empty(t)));
   printf("size of tree: %zu\n\n", tree_size(t));
@@ -148,8 +151,41 @@ void tree_test() {
 
 
 int main(int argc, const char* argv[]) {
-  tree_test();
-  
+  if (argc == 3) {
+    FILE* fin;
+    int n;
+    tree* t = tree_create();
+
+    bool ok = openfiles(argc, argv, &fin, &n);
+    if (!ok) {exit(1);}
+
+    char buf[BUFSIZE];
+    memset(buf, 0, sizeof(buf));
+    int i;
+
+    while ((i = fgetc(fin)) != EOF) {
+      char c = i;
+      const char* cc = &c;
+      if (strncmp(cc, " ", 1) != 0) {
+        strncat(buf, &c, 1);
+      } else {
+        tree_add(t, buf);
+        memset(buf, 0, sizeof(buf));
+      }
+    }
+    closefiles(fin);
+
+    tree_print(t);
+    printf("is my tree empty? %s\n", yesorno(tree_empty(t)));
+    printf("size of tree: %zu\n\n", tree_size(t));
+
+    tree_clear(t);
+    printf("is my tree empty now? %s\n", yesorno(tree_empty(t)));
+    printf("size of tree: %zu\n\n", tree_size(t));
+
+  } else {
+    tree_test();
+  }
+
   return 0;
 }
-
